@@ -6,12 +6,16 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"strconv"
 )
 
 type peopleResponse struct {
 	Category category `json:"category"`
 	Person1  person   `json:"person1"`
 	Person2  person   `json:"person2"`
+
+	Success bool   `json:"success"`
+	Error   string `json:"msg"`
 }
 
 type person struct {
@@ -52,12 +56,12 @@ func getMatchResult(won, lost int) int {
 	return -1
 }
 
-func recordResult(matchResults map[string](map[string]int), id string, category, result int) {
-	if val, ok := matchResults[fmt.Sprint(category)]; ok {
+func recordResult(matchResults map[string](map[string]int), id string, category, result int) error {
+	if val, ok := matchResults[strconv.Itoa(category)]; ok {
 		val[id] += result
-	} else {
-		fmt.Println("Unknown category id:", category)
+		return nil
 	}
+	return fmt.Errorf("Unknown category id: %d", category)
 }
 
 func mkVote(matchResults map[string](map[string]int)) func(http.ResponseWriter, *http.Request) {
@@ -69,7 +73,8 @@ func mkVote(matchResults map[string](map[string]int)) func(http.ResponseWriter, 
 		matchID := getMatchID(voteResults.WonID, voteResults.LostID)
 		matchResult := getMatchResult(voteResults.WonID, voteResults.LostID)
 
-		recordResult(matchResults, matchID, voteResults.CategoryID, matchResult)
+		err := recordResult(matchResults, matchID, voteResults.CategoryID, matchResult)
+		fmt.Fprintf(w, `{"success":%s, "msg":"%s"}`, strconv.FormatBool(err == nil), err.Error())
 	}
 }
 
@@ -85,6 +90,7 @@ func mkEngineers(people []person, categories []category) func(http.ResponseWrite
 			categories[cat],
 			people[i1],
 			people[i2],
+			true, "",
 		}
 		data, _ := json.Marshal(response)
 		fmt.Fprintf(w, string(data))

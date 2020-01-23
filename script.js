@@ -18,6 +18,9 @@ async function PostJSON(url, data) {
         body: JSON.stringify(data),
     });
     const response = await result.json();
+    if(!response.success) {
+        console.error(response.msg);
+    }
     return response;
 }
 
