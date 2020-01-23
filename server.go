@@ -103,7 +103,7 @@ func html(w http.ResponseWriter, r *http.Request) {
 
 func getEngineers() []person {
 	var people []person
-	data, _ := ioutil.ReadFile("people.json")
+	data, _ := ioutil.ReadFile("data/people.json")
 	json.Unmarshal(data, &people)
 
 	return people
@@ -111,7 +111,7 @@ func getEngineers() []person {
 
 func getCategories() []category {
 	var categories []category
-	data, _ := ioutil.ReadFile("categories.json")
+	data, _ := ioutil.ReadFile("data/categories.json")
 	json.Unmarshal(data, &categories)
 
 	return categories
@@ -119,7 +119,7 @@ func getCategories() []category {
 
 func getMatchResults() map[string](map[string]int) {
 	matches := make(map[string](map[string]int))
-	data, _ := ioutil.ReadFile("matchResult.json")
+	data, _ := ioutil.ReadFile("data/matchResult.json")
 	json.Unmarshal(data, &matches)
 
 	return matches
