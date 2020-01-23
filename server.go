@@ -25,8 +25,52 @@ type category struct {
 	Name string `json:"name"`
 }
 
-func vote(w http.ResponseWriter, r *http.Request) {
+type matchResult struct {
+	Category int `json:"category"`
+	ID1      int `json:"id1"`
+	ID2      int `json:"id2"`
+	Wins     int `json:"wins"`
+}
 
+type voteResult struct {
+	WonID      int `json:"won"`
+	LostID     int `json:"lost"`
+	CategoryID int `json:"category"`
+}
+
+func getMatchID(id1, id2 int) string {
+	if id1 > id2 {
+		return fmt.Sprint(id1, "_", id2)
+	}
+	return fmt.Sprint(id2, "_", id1)
+}
+
+func getMatchResult(won, lost int) int {
+	if won > lost {
+		return 1
+	}
+	return -1
+}
+
+func recordResult(matchResults map[string](map[string]int), id string, category, result int) {
+	if val, ok := matchResults[fmt.Sprint(category)]; ok {
+		val[id] += result
+	} else {
+		fmt.Println("Unknown category id:", category)
+	}
+}
+
+func mkVote(matchResults map[string](map[string]int)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var voteResults voteResult
+		body, _ := ioutil.ReadAll(r.Body)
+		json.Unmarshal(body, &voteResults)
+
+		matchID := getMatchID(voteResults.WonID, voteResults.LostID)
+		matchResult := getMatchResult(voteResults.WonID, voteResults.LostID)
+
+		recordResult(matchResults, matchID, voteResults.CategoryID, matchResult)
+	}
 }
 
 func mkEngineers(people []person, categories []category) func(http.ResponseWriter, *http.Request) {
@@ -67,14 +111,21 @@ func getCategories() []category {
 	return categories
 }
 
+func getMatchResults() map[string](map[string]int) {
+	matches := make(map[string](map[string]int))
+	data, _ := ioutil.ReadFile("matchResult.json")
+	json.Unmarshal(data, &matches)
+
+	return matches
+}
+
 func main() {
 	engineers := getEngineers()
 	categories := getCategories()
-	fmt.Println(engineers)
-	fmt.Println(categories)
+	matchResults := getMatchResults()
 
 	http.HandleFunc("/people", mkEngineers(engineers, categories))
-	http.HandleFunc("/vote", vote)
+	http.HandleFunc("/vote", mkVote(matchResults))
 	http.HandleFunc("/", html)
 	http.ListenAndServe(":8080", nil)
 }
