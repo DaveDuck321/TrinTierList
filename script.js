@@ -9,13 +9,25 @@ function randomItem(list) {
     return list[Math.floor(Math.random()*list.length)];
 }
 
+async function PostJSON(url, data) {
+    const result = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json;'
+        },
+        body: JSON.stringify(data),
+    });
+    const response = await result.json();
+    return response;
+}
+
 async function ShowPeople(category) {
     document.getElementById("category").innerHTML = "Loading...";
 
-    const result = await fetch(`people?category=${category}`)
-    const data = await result.json();
+    const data = await PostJSON("/people", {
+        category: category
+    });
 
-    console.log(data);
     document.getElementById("category").innerHTML = data.category.name;
 
     document.getElementById("person1-src").src = randomItem(data.person1.imgs);
@@ -26,28 +38,25 @@ async function ShowPeople(category) {
 
     CurrentRank = {
         id: [data.person1.id, data.person2.id],
-        category: result.category.id,
+        category: data.category.id,
     };
 }
 
-async function Vote(id, category) {
-    fetch("/vote", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: {
+async function Vote(won, lost, category) {
+    PostJSON("/vote", {
             type: 'vote',
-            id: id,
+
+            won: won,
+            lost: lost,
+
             category: category,
-        },
-    });
+        });
     ShowPeople("random");
 }
 
 window.onload = ()=> {
     ShowPeople("random");
 
-    document.getElementById("vote1").onclick = ()=>{Vote(CurrentRank.id[0], CurrentRank.category)};
-    document.getElementById("vote2").onclick = ()=>{Vote(CurrentRank.id[1], CurrentRank.category)};
+    document.getElementById("vote1").onclick = ()=>{Vote(CurrentRank.id[0], CurrentRank.id[1], CurrentRank.category)};
+    document.getElementById("vote2").onclick = ()=>{Vote(CurrentRank.id[1], CurrentRank.id[0], CurrentRank.category)};
 };
