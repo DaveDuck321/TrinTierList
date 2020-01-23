@@ -1,1 +1,4 @@
-{id:, name:"", imgs:["image/file.png"]}
+[
+    {"id":0, "name":"Dave", "imgs":["image/file.png"]},
+    {"id":1, "name":"Duck", "imgs":["image/file1.png"]}
+]
