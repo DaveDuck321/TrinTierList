@@ -1,5 +1,7 @@
 //Returns: {category:{id:int, name:string}, person1:{id:number, name:string, imgs:string[]}, ...}
 
+let imageCache = {};
+
 let CurrentRank = {
     id: [],
     category: 0,
@@ -24,6 +26,18 @@ async function PostJSON(url, data) {
     return response;
 }
 
+function LoadImage(c2d, src) {
+    if(imageCache[src]) {
+        c2d.drawImage(imageCache[src], 0, 0, 500, 500);
+    } else {
+        imageCache[src] = new Image();
+        imageCache[src].src = src;
+        imageCache[src].onload = ()=>{
+            c2d.drawImage(imageCache[src], 0, 0, 500, 500);
+        }       
+    }
+}
+
 async function ShowPeople(category) {
     document.getElementById("category").innerHTML = "Loading...";
 
@@ -33,8 +47,11 @@ async function ShowPeople(category) {
 
     document.getElementById("category").innerHTML = data.category.name;
 
-    document.getElementById("person1-src").src = randomItem(data.person1.imgs);
-    document.getElementById("person2-src").src = randomItem(data.person2.imgs);
+    const c2d_1 = document.getElementById("person1-canvas").getContext('2d');
+    const c2d_2 = document.getElementById("person2-canvas").getContext('2d');
+
+    LoadImage(c2d_1, randomItem(data.person1.imgs));
+    LoadImage(c2d_2, randomItem(data.person2.imgs));
 
     document.getElementById("person1-name").innerHTML = data.person1.name;
     document.getElementById("person2-name").innerHTML = data.person2.name;
