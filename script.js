@@ -53,8 +53,8 @@ async function ShowPeople(category) {
     LoadImage(c2d_1, randomItem(data.person1.imgs));
     LoadImage(c2d_2, randomItem(data.person2.imgs));
 
-    document.getElementById("person1-name").innerHTML = data.person1.name;
-    document.getElementById("person2-name").innerHTML = data.person2.name;
+    document.getElementById("person1-name").innerHTML = data.person1.nickname;
+    document.getElementById("person2-name").innerHTML = data.person2.nickname;
 
     CurrentRank = {
         id: [data.person1.id, data.person2.id],
