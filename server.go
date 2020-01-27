@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+
+	raven "github.com/DaveDuck321/RavenAuthenticationGo"
 )
 
 type peopleResponse struct {
@@ -20,7 +22,7 @@ type peopleResponse struct {
 
 type person struct {
 	ID   int      `json:"id"`
-	Name string   `json:"name"`
+	Name string   `json:"nickname"`
 	Imgs []string `json:"imgs"`
 }
 
@@ -64,8 +66,13 @@ func recordResult(matchResults map[string](map[string]int), id string, category,
 	return fmt.Errorf("Unknown category id: %d", category)
 }
 
-func mkVote(matchResults map[string](map[string]int)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func permissionDenied(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(403)
+	http.ServeFile(w, r, "errors/forbidden.html")
+}
+
+func mkVote(matchResults map[string](map[string]int)) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
 		var voteResults voteResult
 		body, _ := ioutil.ReadAll(r.Body)
 		json.Unmarshal(body, &voteResults)
@@ -78,8 +85,8 @@ func mkVote(matchResults map[string](map[string]int)) func(http.ResponseWriter, 
 	}
 }
 
-func mkEngineers(people []person, categories []category) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func mkEngineers(people []person, categories []category) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
 		cat := rand.Int() % len(categories)
 		i1 := rand.Int() % len(people)
 		i2 := rand.Int() % len(people)
@@ -97,7 +104,13 @@ func mkEngineers(people []person, categories []category) func(http.ResponseWrite
 	}
 }
 
-func html(w http.ResponseWriter, r *http.Request) {
+func mkRedirect(url string) func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
+	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, url, 300)
+	}
+}
+
+func html(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
@@ -130,8 +143,20 @@ func main() {
 	categories := getCategories()
 	matchResults := getMatchResults()
 
-	http.HandleFunc("/people", mkEngineers(engineers, categories))
-	http.HandleFunc("/vote", mkVote(matchResults))
-	http.HandleFunc("/", html)
-	http.ListenAndServe(":8080", nil)
+	auth := raven.NewAuthenticator()
+
+	auth.HandleRavenAuthenticator("/auth/raven", mkRedirect("/"), permissionDenied)
+	auth.AuthoriseAndHandle("/people", mkEngineers(engineers, categories), permissionDenied)
+	auth.AuthoriseAndHandle("/vote", mkVote(matchResults), permissionDenied)
+	auth.AuthoriseAndHandle("/", html, permissionDenied)
+	fmt.Println(http.ListenAndServe(":80", nil))
 }
+
+/*
+https://raven.cam.ac.uk/auth/authenticate.html
+?
+ver=3&
+url=http%3a%2f%2flocalhost%2fauth%2fraven&
+date=20200124T165401Z&
+iact=yes&
+*/
