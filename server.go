@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"time"
 
 	raven "github.com/DaveDuck321/RavenAuthenticationGo"
 )
@@ -81,7 +82,11 @@ func mkVote(matchResults map[string](map[string]int)) func(raven.RavenIdentity, 
 		matchResult := getMatchResult(voteResults.WonID, voteResults.LostID)
 
 		err := recordResult(matchResults, matchID, voteResults.CategoryID, matchResult)
-		fmt.Fprintf(w, `{"success":%s, "msg":"%s"}`, strconv.FormatBool(err == nil), err.Error())
+		if err != nil {
+			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
+			return
+		}
+		fmt.Fprintf(w, `{"success":true, "msg":""}`)
 	}
 }
 
@@ -138,13 +143,23 @@ func getMatchResults() map[string](map[string]int) {
 	return matches
 }
 
+func saveMatchResults(saveJson *time.Ticker, matchResults map[string](map[string]int)) {
+	for {
+		<-saveJson.C
+		data, _ := json.Marshal(matchResults)
+		ioutil.WriteFile("data/matchResult.json", data, 0644)
+	}
+}
+
 func main() {
 	engineers := getEngineers()
 	categories := getCategories()
 	matchResults := getMatchResults()
 
-	auth := raven.NewAuthenticator()
+	saveJSON := time.NewTicker(time.Second)
+	go saveMatchResults(saveJSON, matchResults)
 
+	auth := raven.NewAuthenticator()
 	auth.HandleRavenAuthenticator("/auth/raven", mkRedirect("/"), permissionDenied)
 	auth.AuthoriseAndHandle("/people", mkEngineers(engineers, categories), permissionDenied)
 	auth.AuthoriseAndHandle("/vote", mkVote(matchResults), permissionDenied)
