@@ -1,13 +1,11 @@
 //Returns: {category:{id:int, name:string}, person1:{id:number, name:string, imgs:string[]}, ...}
 
-let imageCache = {};
-
 let CurrentRank = {
     id: [],
     category: 0,
 }
 
-function randomItem(list) {
+function Sample(list) {
     return list[Math.floor(Math.random() * list.length)];
 }
 
@@ -26,10 +24,6 @@ async function PostJSON(url, data) {
     return response;
 }
 
-function LoadImage(c2d, src) {
-    c2d.src = src;
-}
-
 async function ShowPeople(category) {
     document.getElementById("category").innerHTML = "Loading...";
 
@@ -39,15 +33,14 @@ async function ShowPeople(category) {
 
     document.getElementById("category").innerHTML = data.category.name;
 
-    // TODO: Rename
-    const c2d_1 = document.getElementById("person1-canvas");
-    const c2d_2 = document.getElementById("person2-canvas");
+    const image_1 = document.querySelector("#first  img");
+    const image_2 = document.querySelector("#second img");
 
-    LoadImage(c2d_1, randomItem(data.person1.imgs));
-    LoadImage(c2d_2, randomItem(data.person2.imgs));
+    image_1.src = Sample(data.person1.imgs);
+    image_2.src = Sample(data.person2.imgs);
 
-    document.getElementById("person1-name").innerHTML = data.person1.nickname;
-    document.getElementById("person2-name").innerHTML = data.person2.nickname;
+    document.querySelector("#first  h3").innerText = data.person1.nickname;
+    document.querySelector("#second h3").innerText = data.person2.nickname;
 
     CurrentRank = {
         id: [data.person1.id, data.person2.id],
@@ -64,12 +57,13 @@ async function Vote(won, lost, category) {
 
         category: category,
     });
+
     ShowPeople("random");
 }
 
 window.onload = () => {
     ShowPeople("random");
 
-    document.getElementById("vote1").onclick = () => { Vote(CurrentRank.id[0], CurrentRank.id[1], CurrentRank.category) };
-    document.getElementById("vote2").onclick = () => { Vote(CurrentRank.id[1], CurrentRank.id[0], CurrentRank.category) };
+    document.querySelector("#first  button").onclick = () => { Vote(CurrentRank.id[0], CurrentRank.id[1], CurrentRank.category) };
+    document.querySelector("#second button").onclick = () => { Vote(CurrentRank.id[1], CurrentRank.id[0], CurrentRank.category) };
 };
