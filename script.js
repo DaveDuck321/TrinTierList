@@ -8,7 +8,7 @@ let CurrentRank = {
 }
 
 function randomItem(list) {
-    return list[Math.floor(Math.random()*list.length)];
+    return list[Math.floor(Math.random() * list.length)];
 }
 
 async function PostJSON(url, data) {
@@ -20,22 +20,14 @@ async function PostJSON(url, data) {
         body: JSON.stringify(data),
     });
     const response = await result.json();
-    if(!response.success) {
+    if (!response.success) {
         console.error(response.msg);
     }
     return response;
 }
 
 function LoadImage(c2d, src) {
-    if(imageCache[src]) {
-        c2d.drawImage(imageCache[src], 0, 0, 500, 500);
-    } else {
-        imageCache[src] = new Image();
-        imageCache[src].src = src;
-        imageCache[src].onload = ()=>{
-            c2d.drawImage(imageCache[src], 0, 0, 500, 500);
-        }       
-    }
+    c2d.src = src;
 }
 
 async function ShowPeople(category) {
@@ -47,8 +39,9 @@ async function ShowPeople(category) {
 
     document.getElementById("category").innerHTML = data.category.name;
 
-    const c2d_1 = document.getElementById("person1-canvas").getContext('2d');
-    const c2d_2 = document.getElementById("person2-canvas").getContext('2d');
+    // TODO: Rename
+    const c2d_1 = document.getElementById("person1-canvas");
+    const c2d_2 = document.getElementById("person2-canvas");
 
     LoadImage(c2d_1, randomItem(data.person1.imgs));
     LoadImage(c2d_2, randomItem(data.person2.imgs));
@@ -64,19 +57,19 @@ async function ShowPeople(category) {
 
 async function Vote(won, lost, category) {
     PostJSON("/vote", {
-            type: 'vote',
+        type: 'vote',
 
-            won: won,
-            lost: lost,
+        won: won,
+        lost: lost,
 
-            category: category,
-        });
+        category: category,
+    });
     ShowPeople("random");
 }
 
-window.onload = ()=> {
+window.onload = () => {
     ShowPeople("random");
 
-    document.getElementById("vote1").onclick = ()=>{Vote(CurrentRank.id[0], CurrentRank.id[1], CurrentRank.category)};
-    document.getElementById("vote2").onclick = ()=>{Vote(CurrentRank.id[1], CurrentRank.id[0], CurrentRank.category)};
+    document.getElementById("vote1").onclick = () => { Vote(CurrentRank.id[0], CurrentRank.id[1], CurrentRank.category) };
+    document.getElementById("vote2").onclick = () => { Vote(CurrentRank.id[1], CurrentRank.id[0], CurrentRank.category) };
 };
