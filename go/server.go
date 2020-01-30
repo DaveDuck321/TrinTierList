@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 
 	raven "github.com/DaveDuck321/RavenAuthenticationGo"
@@ -45,43 +44,19 @@ type voteResult struct {
 	CategoryID int `json:"category"`
 }
 
-func getMatchID(id1, id2 int) string {
-	if id1 > id2 {
-		return fmt.Sprint(id1, "_", id2)
-	}
-	return fmt.Sprint(id2, "_", id1)
-}
-
-func getMatchResult(won, lost int) int {
-	if won > lost {
-		return 1
-	}
-	return -1
-}
-
-func recordResult(matchResults map[string](map[string]int), id string, category, result int) error {
-	if val, ok := matchResults[strconv.Itoa(category)]; ok {
-		val[id] += result
-		return nil
-	}
-	return fmt.Errorf("Unknown category id: %d", category)
-}
-
 func permissionDenied(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(403)
 	http.ServeFile(w, r, "errors/forbidden.html")
 }
 
-func mkVote(matchResults map[string](map[string]int)) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+func mkVote(rankings rankings) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
 	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
 		var voteResults voteResult
 		body, _ := ioutil.ReadAll(r.Body)
 		json.Unmarshal(body, &voteResults)
 
-		matchID := getMatchID(voteResults.WonID, voteResults.LostID)
-		matchResult := getMatchResult(voteResults.WonID, voteResults.LostID)
+		err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
 
-		err := recordResult(matchResults, matchID, voteResults.CategoryID, matchResult)
 		if err != nil {
 			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
 			return
@@ -119,33 +94,9 @@ func html(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) 
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
-func getEngineers() []person {
-	var people []person
-	data, _ := ioutil.ReadFile("data/people.json")
-	json.Unmarshal(data, &people)
-
-	return people
-}
-
-func getCategories() []category {
-	var categories []category
-	data, _ := ioutil.ReadFile("data/categories.json")
-	json.Unmarshal(data, &categories)
-
-	return categories
-}
-
-func getMatchResults() map[string](map[string]int) {
-	matches := make(map[string](map[string]int))
-	data, _ := ioutil.ReadFile("data/matchResult.json")
-	json.Unmarshal(data, &matches)
-
-	return matches
-}
-
-func saveMatchResults(saveJson *time.Ticker, matchResults map[string](map[string]int)) {
+func saveMatchResults(saveJSON *time.Ticker, matchResults rankings) {
 	for {
-		<-saveJson.C
+		<-saveJSON.C
 		data, _ := json.Marshal(matchResults)
 		ioutil.WriteFile("data/matchResult.json", data, 0644)
 	}
@@ -154,7 +105,7 @@ func saveMatchResults(saveJson *time.Ticker, matchResults map[string](map[string
 func main() {
 	engineers := getEngineers()
 	categories := getCategories()
-	matchResults := getMatchResults()
+	matchResults := getRankingsResults(engineers, categories)
 
 	saveJSON := time.NewTicker(time.Second)
 	go saveMatchResults(saveJSON, matchResults)
