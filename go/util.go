@@ -12,12 +12,20 @@ const BigConst = (1 << 8)
 
 type rankings map[int](map[int]int)
 
-func getEngineers() []person {
+func getPeople() []person {
 	var people []person
 	data, _ := ioutil.ReadFile("data/people.json")
 	json.Unmarshal(data, &people)
 
 	return people
+}
+
+func makePeopleMap(people []person) map[int]person {
+	result := make(map[int]person)
+	for _, person := range people {
+		result[person.ID] = person
+	}
+	return result
 }
 
 func getCategories() []category {
@@ -47,13 +55,16 @@ func getRankingsResults(people []person, categories []category) rankings {
 	return rankings
 }
 
-func randomMatch(available []int) (int, int, error) {
+func nextMatch(available []int) (int, int, error) {
 	if len(available) == 0 {
 		return 0, 0, fmt.Errorf("no available matches")
 	}
-	matchID := available[rand.Int()%len(available)]
 
-	return decodeMatchID(matchID)
+	id1, id2 := decodeMatchID(available[0])
+	if rand.Int()%2 == 0 {
+		return id1, id2, nil
+	}
+	return id2, id1, nil
 }
 
 func getPeopleFromIDs(peopleMap map[int]person, id1, id2 int) (person, person, error) {
@@ -68,17 +79,8 @@ func getPeopleFromIDs(peopleMap map[int]person, id1, id2 int) (person, person, e
 	return p1, p2, nil
 }
 
-func indexOfMatchID(matches []int, matchID int) (int, error) {
-	for i, match := range matches {
-		if match == matchID {
-			return i, nil
-		}
-	}
-	return 0, fmt.Errorf("match id not found")
-}
-
-func decodeMatchID(matchID int) (int, int, error) {
-	return matchID % BigConst, matchID / BigConst, nil
+func decodeMatchID(matchID int) (int, int) {
+	return matchID % BigConst, matchID / BigConst
 }
 
 func getMatchID(p1ID int, p2ID int) int {
