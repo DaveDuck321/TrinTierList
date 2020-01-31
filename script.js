@@ -42,6 +42,9 @@ async function ShowPeople(category) {
     document.querySelector("#first  h3").innerText = data.person1.nickname;
     document.querySelector("#second h3").innerText = data.person2.nickname;
 
+    document.querySelector("#first  p span").innerText = data.person1.elo;
+    document.querySelector("#second p span").innerText = data.person2.elo;
+
     CurrentRank = {
         id: [data.person1.id, data.person2.id],
         category: data.category.id,

@@ -1,5 +1,5 @@
 [
-    {"id":1, "nickname":"Murican!", "imgs":["image/tom.png"]},
+    {"id":1, "nickname":"Murican!", "crsID":"tg443", "imgs":["image/tom.png"]},
     {"id":2, "nickname":"69k man", "imgs":["image/sam.png"]},
     {"id":3, "nickname":"SimpleTim", "imgs":["image/tim.png"]},
     {"id":4, "nickname":"The greek jordie", "imgs":["image/jasonp.png"]},

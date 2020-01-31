@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -21,9 +20,12 @@ type peopleResponse struct {
 }
 
 type person struct {
-	ID   int      `json:"id"`
-	Name string   `json:"nickname"`
-	Imgs []string `json:"imgs"`
+	ID    int      `json:"id"`
+	CrsID string   `json:"crsID"`
+	Name  string   `json:"nickname"`
+	Imgs  []string `json:"imgs"`
+
+	ELO int `json:"elo"`
 }
 
 type category struct {
@@ -44,12 +46,16 @@ type voteResult struct {
 	CategoryID int `json:"category"`
 }
 
+//Maps user identity and category to remaining votes
+type availableVotes map[int]([]int)
+type allAvailableVotes map[string]availableVotes
+
 func permissionDenied(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(403)
 	http.ServeFile(w, r, "errors/forbidden.html")
 }
 
-func mkVote(rankings rankings) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+func mkVote(rankings rankings, votes allAvailableVotes) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
 	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
 		var voteResults voteResult
 		body, _ := ioutil.ReadAll(r.Body)
@@ -65,18 +71,33 @@ func mkVote(rankings rankings) func(raven.RavenIdentity, http.ResponseWriter, *h
 	}
 }
 
-func mkEngineers(people []person, categories []category) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+func mkEngineers(ranks rankings, votes allAvailableVotes, people []person, categories []category) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+	peopleMap := make(map[int]person)
+	for _, person := range people {
+		peopleMap[person.ID] = person
+	}
+
 	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
-		cat := rand.Int() % len(categories)
-		i1 := rand.Int() % len(people)
-		i2 := rand.Int() % len(people)
-		for i2 == i1 {
-			i2 = rand.Int() % len(people)
+		//cat := categories[rand.Int()%len(categories)]
+		cat := categories[1]
+		votesLeft := votes[identity.CrsID][cat.ID]
+
+		p1ID, p2ID, err := randomMatch(votesLeft)
+		if err != nil {
+			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
+			return
 		}
+		p1, p2, err := getPeopleFromIDs(peopleMap, p1ID, p2ID)
+		if err != nil {
+			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
+			return
+		}
+
+		p1.ELO = ranks[cat.ID][p1ID]
+		p2.ELO = ranks[cat.ID][p2ID]
 		response := peopleResponse{
-			categories[cat],
-			people[i1],
-			people[i2],
+			cat,
+			p1, p2,
 			true, "",
 		}
 		data, _ := json.Marshal(response)
@@ -102,18 +123,33 @@ func saveMatchResults(saveJSON *time.Ticker, matchResults rankings) {
 	}
 }
 
+func updateAvailableVotes(votes allAvailableVotes, people []person, categories []category) allAvailableVotes {
+	allMatches := genPermutations(people)
+
+	for _, person := range people {
+		votes[person.CrsID] = make(availableVotes)
+		for _, category := range categories {
+			votes[person.CrsID][category.ID] = make([]int, len(allMatches))
+			copy(votes[person.CrsID][category.ID], allMatches)
+		}
+	}
+	return votes
+}
+
 func main() {
 	engineers := getEngineers()
 	categories := getCategories()
-	matchResults := getRankingsResults(engineers, categories)
+	rankings := getRankingsResults(engineers, categories)
+
+	matchesRemaining := updateAvailableVotes(make(allAvailableVotes), engineers, categories)
 
 	saveJSON := time.NewTicker(time.Second)
-	go saveMatchResults(saveJSON, matchResults)
+	go saveMatchResults(saveJSON, rankings)
 
 	auth := raven.NewAuthenticator()
 	auth.HandleRavenAuthenticator("/auth/raven", mkRedirect("/"), permissionDenied)
-	auth.AuthoriseAndHandle("/people", mkEngineers(engineers, categories), permissionDenied)
-	auth.AuthoriseAndHandle("/vote", mkVote(matchResults), permissionDenied)
+	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, engineers, categories), permissionDenied)
+	auth.AuthoriseAndHandle("/vote", mkVote(rankings, matchesRemaining), permissionDenied)
 	auth.AuthoriseAndHandle("/", html, permissionDenied)
 	fmt.Println(http.ListenAndServe(":80", nil))
 }
