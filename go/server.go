@@ -55,13 +55,26 @@ func permissionDenied(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "errors/forbidden.html")
 }
 
-func mkVote(rankings rankings, votes allAvailableVotes) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
 	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
 		var voteResults voteResult
 		body, _ := ioutil.ReadAll(r.Body)
 		json.Unmarshal(body, &voteResults)
 
-		err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
+		votes, ok := allVotes[identity.CrsID][voteResults.CategoryID]
+		if !ok {
+			fmt.Fprintf(w, `{"success":false, "msg":"CRSID or category invaild"}`)
+			return
+		}
+		matchIndex, err := indexOfMatchID(votes, getMatchID(voteResults.WonID, voteResults.LostID))
+		if err != nil {
+			fmt.Fprintf(w, `{"success":false, "msg":"Attempted to vote twice"}`)
+			return
+		}
+		votes[matchIndex] = votes[0]
+		allVotes[identity.CrsID][voteResults.CategoryID] = votes[1:]
+
+		err = updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
 
 		if err != nil {
 			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())

@@ -68,6 +68,15 @@ func getPeopleFromIDs(peopleMap map[int]person, id1, id2 int) (person, person, e
 	return p1, p2, nil
 }
 
+func indexOfMatchID(matches []int, matchID int) (int, error) {
+	for i, match := range matches {
+		if match == matchID {
+			return i, nil
+		}
+	}
+	return 0, fmt.Errorf("match id not found")
+}
+
 func decodeMatchID(matchID int) (int, int, error) {
 	return matchID % BigConst, matchID / BigConst, nil
 }
