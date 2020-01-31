@@ -71,15 +71,14 @@ func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.RavenIdent
 			fmt.Fprintf(w, `{"success":false, "msg":"CRSID or category invaild"}`)
 			return
 		}
-		matchIndex, err := indexOfMatchID(votes, getMatchID(voteResults.WonID, voteResults.LostID))
-		if err != nil {
+
+		if votes[0] != getMatchID(voteResults.WonID, voteResults.LostID) {
 			fmt.Fprintf(w, `{"success":false, "msg":"Attempted to vote twice"}`)
 			return
 		}
-		votes[matchIndex] = votes[0]
 		allVotes[identity.CrsID][voteResults.CategoryID] = votes[1:]
 
-		err = updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
+		err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
 
 		if err != nil {
 			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
@@ -89,12 +88,7 @@ func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.RavenIdent
 	}
 }
 
-func mkEngineers(ranks rankings, votes allAvailableVotes, people []person, categories []category) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
-	peopleMap := make(map[int]person)
-	for _, person := range people {
-		peopleMap[person.ID] = person
-	}
-
+func mkEngineers(ranks rankings, votes allAvailableVotes, peopleMap map[int]person, categories []category) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
 	categoryMap := make(map[int]category)
 	for _, category := range categories {
 		categoryMap[category.ID] = category
@@ -112,7 +106,7 @@ func mkEngineers(ranks rankings, votes allAvailableVotes, people []person, categ
 		}
 		votesLeft := votes[identity.CrsID][cat.ID]
 
-		p1ID, p2ID, err := randomMatch(votesLeft)
+		p1ID, p2ID, err := nextMatch(votesLeft)
 		if err != nil {
 			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
 			return
@@ -159,26 +153,33 @@ func updateAvailableVotes(votes allAvailableVotes, people []person, categories [
 	for _, person := range people {
 		votes[person.CrsID] = make(availableVotes)
 		for _, category := range categories {
-			votes[person.CrsID][category.ID] = make([]int, len(allMatches))
-			copy(votes[person.CrsID][category.ID], allMatches)
+			pVotes := make([]int, len(allMatches))
+			copy(pVotes, allMatches)
+
+			//Display in random order
+			rand.Shuffle(len(allMatches), func(i, j int) {
+				pVotes[i], pVotes[j] = pVotes[j], pVotes[i]
+			})
+			votes[person.CrsID][category.ID] = pVotes
 		}
 	}
 	return votes
 }
 
 func main() {
-	engineers := getEngineers()
+	people := getPeople()
+	peopleMap := makePeopleMap(people)
 	categories := getCategories()
-	rankings := getRankingsResults(engineers, categories)
+	rankings := getRankingsResults(people, categories)
 
-	matchesRemaining := updateAvailableVotes(make(allAvailableVotes), engineers, categories)
+	matchesRemaining := updateAvailableVotes(make(allAvailableVotes), people, categories)
 
 	saveJSON := time.NewTicker(time.Second)
 	go saveMatchResults(saveJSON, rankings)
 
 	auth := raven.NewAuthenticator()
 	auth.HandleRavenAuthenticator("/auth/raven", mkRedirect("/"), permissionDenied)
-	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, engineers, categories), permissionDenied)
+	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
 	auth.AuthoriseAndHandle("/vote", mkVote(rankings, matchesRemaining), permissionDenied)
 	auth.AuthoriseAndHandle("/", html, permissionDenied)
 	fmt.Println(http.ListenAndServe(":80", nil))
