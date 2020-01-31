@@ -53,7 +53,11 @@ func randomMatch(available []int) (int, int, error) {
 	}
 	matchID := available[rand.Int()%len(available)]
 
-	return decodeMatchID(matchID)
+	id1, id2 := decodeMatchID(matchID)
+	if rand.Int()%2 == 0 {
+		return id1, id2, nil
+	}
+	return id2, id1, nil
 }
 
 func getPeopleFromIDs(peopleMap map[int]person, id1, id2 int) (person, person, error) {
@@ -77,8 +81,8 @@ func indexOfMatchID(matches []int, matchID int) (int, error) {
 	return 0, fmt.Errorf("match id not found")
 }
 
-func decodeMatchID(matchID int) (int, int, error) {
-	return matchID % BigConst, matchID / BigConst, nil
+func decodeMatchID(matchID int) (int, int) {
+	return matchID % BigConst, matchID / BigConst
 }
 
 func getMatchID(p1ID int, p2ID int) int {
