@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -44,6 +45,10 @@ type voteResult struct {
 	WonID      int `json:"won"`
 	LostID     int `json:"lost"`
 	CategoryID int `json:"category"`
+}
+
+type peopleRequest struct {
+	CategoryChoice int `json:"category"`
 }
 
 //Maps user identity and category to remaining votes
@@ -90,9 +95,21 @@ func mkEngineers(ranks rankings, votes allAvailableVotes, people []person, categ
 		peopleMap[person.ID] = person
 	}
 
+	categoryMap := make(map[int]category)
+	for _, category := range categories {
+		categoryMap[category.ID] = category
+	}
+
 	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
-		//cat := categories[rand.Int()%len(categories)]
-		cat := categories[1]
+		var request peopleRequest
+		body, _ := ioutil.ReadAll(r.Body)
+		json.Unmarshal(body, &request)
+
+		cat, ok := categoryMap[request.CategoryChoice]
+		if !ok {
+			//Choose random category if user's choice is wrong
+			cat = categories[rand.Int()%len(categories)]
+		}
 		votesLeft := votes[identity.CrsID][cat.ID]
 
 		p1ID, p2ID, err := randomMatch(votesLeft)
