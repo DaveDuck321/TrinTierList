@@ -149,7 +149,7 @@ func saveMatchResults(saveJSON *time.Ticker, matchResults rankings) {
 
 func updateAvailableVotes(votes allAvailableVotes, people []person, categories []category) allAvailableVotes {
 	allMatches := genPermutations(people)
-
+	rand.Seed(time.Now().UnixNano())
 	for _, person := range people {
 		votes[person.CrsID] = make(availableVotes)
 		for _, category := range categories {
