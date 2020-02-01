@@ -60,8 +60,8 @@ func permissionDenied(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "errors/forbidden.html")
 }
 
-func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
-	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
+func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, http.ResponseWriter, *http.Request) {
+	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 		var voteResults voteResult
 		body, _ := ioutil.ReadAll(r.Body)
 		json.Unmarshal(body, &voteResults)
@@ -88,13 +88,13 @@ func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.RavenIdent
 	}
 }
 
-func mkEngineers(ranks rankings, votes allAvailableVotes, peopleMap map[int]person, categories []category) func(raven.RavenIdentity, http.ResponseWriter, *http.Request) {
+func mkEngineers(ranks rankings, votes allAvailableVotes, peopleMap map[int]person, categories []category) func(raven.Identity, http.ResponseWriter, *http.Request) {
 	categoryMap := make(map[int]category)
 	for _, category := range categories {
 		categoryMap[category.ID] = category
 	}
 
-	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
+	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 		var request peopleRequest
 		body, _ := ioutil.ReadAll(r.Body)
 		json.Unmarshal(body, &request)
@@ -129,13 +129,13 @@ func mkEngineers(ranks rankings, votes allAvailableVotes, peopleMap map[int]pers
 	}
 }
 
-func mkRedirect(url string) func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
-	return func(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
+func mkRedirect(url string) func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
+	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, url, 300)
 	}
 }
 
-func html(identity raven.RavenIdentity, w http.ResponseWriter, r *http.Request) {
+func html(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
@@ -177,8 +177,8 @@ func main() {
 	saveJSON := time.NewTicker(time.Second)
 	go saveMatchResults(saveJSON, rankings)
 
-	auth := raven.NewAuthenticator()
-	auth.HandleRavenAuthenticator("/auth/raven", mkRedirect("/"), permissionDenied)
+	auth := raven.NewAuthenticator("./keys/pubkey2")
+	auth.HandleAuthenticationURL("/auth/raven", mkRedirect("/"), permissionDenied)
 	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
 	auth.AuthoriseAndHandle("/vote", mkVote(rankings, matchesRemaining), permissionDenied)
 	auth.AuthoriseAndHandle("/", html, permissionDenied)
