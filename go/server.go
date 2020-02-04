@@ -56,7 +56,7 @@ type availableVotes map[int]([]int)
 type allAvailableVotes map[string]availableVotes
 
 func permissionDenied(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(403)
+	//w.WriteHeader(403)
 	http.ServeFile(w, r, "errors/forbidden.html")
 }
 
@@ -182,6 +182,8 @@ func main() {
 	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
 	auth.AuthoriseAndHandle("/vote", mkVote(rankings, matchesRemaining), permissionDenied)
 	auth.AuthoriseAndHandle("/", html, permissionDenied)
+
+	fmt.Println("Listening at port 80...")
 	fmt.Println(http.ListenAndServe(":80", nil))
 }
 
