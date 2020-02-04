@@ -47,7 +47,7 @@ type voteResult struct {
 	CategoryID int `json:"category"`
 }
 
-type peopleRequest struct {
+type categoryChoice struct {
 	CategoryChoice int `json:"category"`
 }
 
@@ -85,13 +85,13 @@ func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, 
 		}
 		allVotes[identity.CrsID][voteResults.CategoryID] = votes[1:]
 
-		err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
+		dP1Elo, dP2Elo, err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
 
 		if err != nil {
 			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
 			return
 		}
-		fmt.Fprintf(w, `{"success":true, "msg":""}`)
+		fmt.Fprintf(w, `{"success":true, "msg":"", elo_change:{"winner":%d, "looser":%d}}`, dP1Elo, dP2Elo)
 	}
 }
 
@@ -112,7 +112,7 @@ func mkEngineers(ranks rankings, votes allAvailableVotes, peopleMap map[int]pers
 	}
 
 	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
-		var request peopleRequest
+		var request categoryChoice
 		body, _ := ioutil.ReadAll(r.Body)
 		json.Unmarshal(body, &request)
 
