@@ -51,15 +51,22 @@ type peopleRequest struct {
 	CategoryChoice int `json:"category"`
 }
 
+type leaderboardResponse struct {
+	People     []person   `json:"people"`
+	Categories []category `json:"categories"`
+	Rankings   rankings   `json:"elos"`
+}
+
 //Maps user identity and category to remaining votes
 type availableVotes map[int]([]int)
 type allAvailableVotes map[string]availableVotes
 
 func permissionDenied(w http.ResponseWriter, r *http.Request) {
-	//w.WriteHeader(403)
+	w.WriteHeader(403)
 	http.ServeFile(w, r, "errors/forbidden.html")
 }
 
+// TODO: ELO change
 func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, http.ResponseWriter, *http.Request) {
 	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 		var voteResults voteResult
@@ -85,6 +92,16 @@ func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, 
 			return
 		}
 		fmt.Fprintf(w, `{"success":true, "msg":""}`)
+	}
+}
+
+func mkLeaderboard(people []person, categories []category, ranks rankings) func(raven.Identity, http.ResponseWriter, *http.Request) {
+	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
+		responseObj := leaderboardResponse{
+			people, categories, ranks,
+		}
+		resp, _ := json.Marshal(responseObj)
+		fmt.Fprintf(w, string(resp))
 	}
 }
 
@@ -180,6 +197,7 @@ func main() {
 	auth := raven.NewAuthenticator("http", "localhost", "./keys/pubkey2")
 	auth.HandleAuthenticationPath("/auth/raven", mkRedirect("/"), permissionDenied)
 	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
+	auth.AuthoriseAndHandle("/leaderboard", mkLeaderboard(people, categories, rankings), permissionDenied)
 	auth.AuthoriseAndHandle("/vote", mkVote(rankings, matchesRemaining), permissionDenied)
 	auth.AuthoriseAndHandle("/", html, permissionDenied)
 
