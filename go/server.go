@@ -63,11 +63,17 @@ type availableVotes map[int]([]int)
 type allAvailableVotes map[string]availableVotes
 
 func permissionDenied(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(403)
-	http.ServeFile(w, r, "errors/forbidden.html")
+	http.Redirect(w, r, "/forbidden", 302)
 }
 
-// TODO: ELO change
+func staticServe(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "www"+r.URL.EscapedPath())
+}
+
+func serveForbidden(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "www/error/forbidden.html")
+}
+
 func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, http.ResponseWriter, *http.Request) {
 	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 		var voteResults voteResult
@@ -153,10 +159,6 @@ func mkRedirect(url string) func(identity raven.Identity, w http.ResponseWriter,
 	}
 }
 
-func html(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, r.URL.Path[1:])
-}
-
 func saveMatchResults(saveJSON *time.Ticker, matchResults rankings) {
 	for {
 		<-saveJSON.C
@@ -196,11 +198,14 @@ func main() {
 	go saveMatchResults(saveJSON, rankings)
 
 	auth := raven.NewAuthenticator("http", "localhost", "./keys/pubkey2")
+
 	auth.HandleAuthenticationPath("/auth/raven", mkRedirect("/"), permissionDenied)
-	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
-	auth.AuthoriseAndHandle("/leaderboard", mkLeaderboard(people, categories, rankings), permissionDenied)
-	auth.AuthoriseAndHandle("/vote", mkVote(rankings, matchesRemaining), permissionDenied)
-	auth.AuthoriseAndHandle("/", html, permissionDenied)
+	auth.AuthoriseAndHandle("/api/match", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
+	auth.AuthoriseAndHandle("/api/leaderboard", mkLeaderboard(people, categories, rankings), permissionDenied)
+	auth.AuthoriseAndHandle("/api/vote", mkVote(rankings, matchesRemaining), permissionDenied)
+
+	http.HandleFunc("/forbidden", serveForbidden)
+	auth.AuthoriseAndHandle("/", staticServe, permissionDenied)
 
 	fmt.Println("Listening at port 80...")
 	fmt.Println(http.ListenAndServe(":80", nil))

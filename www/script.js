@@ -57,7 +57,7 @@ async function PostJSON(url, data) {
 async function ShowPeople(category) {
     document.getElementById("category").innerHTML = "Loading...";
 
-    const data = await PostJSON("/people", {
+    const data = await PostJSON("/api/match", {
         category: category
     });
 
@@ -130,7 +130,7 @@ async function Vote(Winner, category) {
         Data.lost = CurrentRank.id[0];
     }
 
-    const Response = await PostJSON("/vote", Data);
+    const Response = await PostJSON("/api/vote", Data);
 
     if (Response.success)
         await AnimateEloChange(Response.elo_change, Winner);
