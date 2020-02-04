@@ -131,7 +131,7 @@ func mkEngineers(ranks rankings, votes allAvailableVotes, peopleMap map[int]pers
 
 func mkRedirect(url string) func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, url, 300)
+		http.Redirect(w, r, url, 302)
 	}
 }
 
