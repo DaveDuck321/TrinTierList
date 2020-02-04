@@ -32,11 +32,11 @@ function FormatEloChange(Change) {
 
 function EloChangeClass(Change) {
     if (Change < 0)
-        return "text-danger  text-monospace";
+        return "text-danger";
     else if (Change == 0)
-        return "text-muted   text-monospace";
+        return "text-muted";
     else // (Change > 0)
-        return "text-success text-monospace";
+        return "text-success";
 }
 
 async function PostJSON(url, data) {
