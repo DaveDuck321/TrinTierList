@@ -19,12 +19,10 @@ async function PostJSON(url, data) {
 
 async function PopulateLeaderboard() {
     let { people, categories, elos } = await PostJSON("/api/leaderboard", {});
-    for(ranking of elos) {
-        let {id, elos} = ranking;
-        
+    for (ranking of elos) {
+        let { id, elos } = ranking;
+
     }
 }
 
-window.onload = ()=> {
-    PopulateLeaderboard();
-}
+document.addEventListener("DOMContentLoaded", PopulateLeaderboard);

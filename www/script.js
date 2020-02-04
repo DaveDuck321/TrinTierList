@@ -141,9 +141,9 @@ async function Vote(Winner, category) {
         Button.disabled = false;
 }
 
-window.onload = () => {
+document.addEventListener("DOMContentLoaded", () => {
     ShowPeople("random");
 
     document.querySelector("#first  button").onclick = () => { Vote(kFirst, CurrentRank.category) };
     document.querySelector("#second button").onclick = () => { Vote(kSecond, CurrentRank.category) };
-};
+});
