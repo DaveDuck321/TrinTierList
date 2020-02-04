@@ -5,7 +5,7 @@ const kSecond = Symbol("second");
 
 let CurrentRank = {
     id: [],
-    category: 0,
+    category: 0
 }
 
 function Sleep(ms) {
@@ -40,26 +40,26 @@ function EloChangeClass(Change) {
 }
 
 async function PostJSON(url, data) {
-    const result = await fetch(url, {
-        method: 'POST',
+    const Request = await fetch(url, {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json;'
+            "Content-Type": "application/json"
         },
         body: JSON.stringify(data),
     });
-    const response = await result.json();
-    if (!response.success) {
-        console.error(response.msg);
+
+    const Response = await Request.json();
+    if (!Response.success) {
+        console.error(Response.msg);
     }
-    return response;
+
+    return Response;
 }
 
 async function ShowPeople(category) {
     document.getElementById("category").innerHTML = "Loading...";
 
-    const data = await PostJSON("/api/match", {
-        category: category
-    });
+    const data = await PostJSON("/api/match", { category });
 
     document.getElementById("category").innerHTML = data.category.name;
 
@@ -118,8 +118,8 @@ async function Vote(Winner, category) {
         Button.disabled = true;
 
     const Data = {
-        type: 'vote',
-        category: category,
+        type: "vote",
+        category
     };
 
     if (Winner === kFirst) {
