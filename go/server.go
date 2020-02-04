@@ -177,8 +177,8 @@ func main() {
 	saveJSON := time.NewTicker(time.Second)
 	go saveMatchResults(saveJSON, rankings)
 
-	auth := raven.NewAuthenticator("./keys/pubkey2")
-	auth.HandleAuthenticationURL("/auth/raven", mkRedirect("/"), permissionDenied)
+	auth := raven.NewAuthenticator("http", "localhost", "./keys/pubkey2")
+	auth.HandleAuthenticationPath("/auth/raven", mkRedirect("/"), permissionDenied)
 	auth.AuthoriseAndHandle("/people", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
 	auth.AuthoriseAndHandle("/vote", mkVote(rankings, matchesRemaining), permissionDenied)
 	auth.AuthoriseAndHandle("/", html, permissionDenied)
