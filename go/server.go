@@ -52,6 +52,7 @@ type categoryChoice struct {
 }
 
 type leaderboardResponse struct {
+	Success    bool       `json:"success"`
 	People     []person   `json:"people"`
 	Categories []category `json:"categories"`
 	Rankings   rankings   `json:"elos"`
@@ -85,20 +86,20 @@ func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, 
 		}
 		allVotes[identity.CrsID][voteResults.CategoryID] = votes[1:]
 
-		dP1Elo, dP2Elo, err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
+		p1EloDelta, p2EloDelta, err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
 
 		if err != nil {
 			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
 			return
 		}
-		fmt.Fprintf(w, `{"success":true, "msg":"", elo_change:{"winner":%d, "looser":%d}}`, dP1Elo, dP2Elo)
+		fmt.Fprintf(w, `{"success":true, "msg":"", "elo_change":{"winner":%d, "looser":%d}}`, p1EloDelta, p2EloDelta)
 	}
 }
 
 func mkLeaderboard(people []person, categories []category, ranks rankings) func(raven.Identity, http.ResponseWriter, *http.Request) {
 	return func(identity raven.Identity, w http.ResponseWriter, r *http.Request) {
 		responseObj := leaderboardResponse{
-			people, categories, ranks,
+			true, people, categories, ranks,
 		}
 		resp, _ := json.Marshal(responseObj)
 		fmt.Fprintf(w, string(resp))
