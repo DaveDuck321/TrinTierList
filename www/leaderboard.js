@@ -24,9 +24,12 @@ function sortByCategory(people, elos, category) {
     people.sort((p1, p2) => p2.elo - p1.elo );
 }
 
-async function PopulateLeaderboard(people, elos, categories, category) {
+async function PopulateLeaderboard(people, elos, category) {
+    //Delete existing entries
+    document.querySelectorAll("#leaderboard tr").forEach((e)=>{e.remove()})
+
     sortByCategory(people, elos, category);
-    document.getElementById("category").innerText = categories[category].name;
+    //document.getElementById("category").innerText = categories[category].name;
 
     const leaderboard = document.getElementById("leaderboard");
     const template = leaderboard.querySelector("template");
@@ -43,7 +46,24 @@ async function PopulateLeaderboard(people, elos, categories, category) {
     }
 }
 
+function PopulateCategories(categories) {
+    let select = document.getElementById("category");
+
+    for(let category of categories) {
+        let option = document.createElement("option");
+        option.value = category.id;
+        option.innerText = category.name;
+
+        select.appendChild(option);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", async ()=> {
     let { people, categories, elos } = await PostJSON("/api/leaderboard", {});
-    PopulateLeaderboard(people, elos, categories, categories[0].id);
+    PopulateCategories(categories);
+
+    document.getElementById("category").onchange = (e)=> {
+        PopulateLeaderboard(people, elos, e.srcElement.value);
+    };
+    PopulateLeaderboard(people, elos, categories[0].id);
 });
