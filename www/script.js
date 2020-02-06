@@ -5,6 +5,12 @@ import { PostJSON, PopulateCategories } from "/common.js";
 const kFirst = Symbol("first");
 const kSecond = Symbol("second");
 
+const ErrorMessages = {"no available matches":
+`No matches could be found for your user in this category!
+Are you permitted to vote?
+If you believe this is an error, please contact the administrator.`
+};
+
 let RequestedCategory = 0;
 let CurrentMatch = {
     id: [],
@@ -41,6 +47,15 @@ async function ShowPeople(category) {
     document.getElementById("categoryName").innerHTML = "Loading...";
 
     const data = await PostJSON("/api/match", { category });
+
+    //Crash out w/ message if non-engineer tries to vote
+    if(!data.success) {
+        document.getElementById("categoryName").innerHTML = "Error!";
+        if(ErrorMessages[data.msg]) {
+            alert(ErrorMessages[data.msg]);
+        }
+        return;
+    }
 
     document.getElementById("categoryName").innerHTML = data.category.name;
 
