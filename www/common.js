@@ -1,4 +1,4 @@
-export async function PostJSON(url, Data) {
+export async function PostJSON(url, Data = {}) {
     const Request = await fetch(url, {
         method: "POST",
         headers: {
@@ -23,6 +23,6 @@ export function PopulateCategories(categories, onchange) {
 
         select.appendChild(option);
     }
-    
+
     select.addEventListener("change", onchange);
 }

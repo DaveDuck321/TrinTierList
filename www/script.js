@@ -81,7 +81,7 @@ async function AnimateEloChange(elo_change, Winner) {
     Change2.innerText = FormatEloChange(elo_change.person2);
 
     await Sleep(300);
-    
+
     Change1.innerText = "";
     Change2.innerText = "";
 
@@ -127,9 +127,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelector("#first  button").onclick = () => { Vote(kFirst, CurrentMatch.category) };
     document.querySelector("#second button").onclick = () => { Vote(kSecond, CurrentMatch.category) };
 
-    const { people, categories } = await PostJSON("/api/leaderboard", {});
-    PopulateCategories(categories, (e)=> {
-        RequestedCategory = Number.parseInt(e.srcElement.value);
+    const { categories } = await PostJSON("/api/leaderboard");
+    PopulateCategories(categories, e => {
+        RequestedCategory = parseInt(e.srcElement.value);
         ShowPeople(RequestedCategory);
     });
     ShowPeople(RequestedCategory);
