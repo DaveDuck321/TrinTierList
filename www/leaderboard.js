@@ -19,8 +19,8 @@ async function PopulateLeaderboard(people, elos, category) {
     const template = leaderboard.querySelector("template");
     const row = template.content.querySelector("tr");
 
-    for (let [index, person] of people.entries()) {
-        let personRow = document.importNode(row, true);
+    for (const [index, person] of people.entries()) {
+        const personRow = document.importNode(row, true);
 
         personRow.querySelector(".rank").innerText = index + 1;
         personRow.querySelector(".nickname").innerText = person.nickname;
