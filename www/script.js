@@ -22,12 +22,9 @@ function Sample(list) {
 }
 
 function FormatEloChange(Change) {
-    if (Change == 0)
-        return "";
-
     let S = Change.toString();
 
-    if (Change > 0)
+    if (Change >= 0)
         S = "+" + S
 
     return S;
@@ -36,10 +33,8 @@ function FormatEloChange(Change) {
 function EloChangeClass(Change) {
     if (Change < 0)
         return "text-danger";
-    else if (Change == 0)
-        return "text-muted";
-    else // (Change > 0)
-        return "text-success";
+    // (Change >= 0)
+    return "text-success";
 }
 
 async function ShowPeople(category) {
@@ -89,8 +84,8 @@ async function AnimateEloChange(elo_change, Winner) {
     
     Change1.innerText = "";
     Change2.innerText = "";
-    
-    /*
+
+    /* Removed for now since it makes the site feel jerky -- maybe adjust timings?
     const Elo1 = document.querySelector("#first  p span:first-of-type");
     const Elo2 = document.querySelector("#second p span:first-of-type");
 

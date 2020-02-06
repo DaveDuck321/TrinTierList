@@ -92,13 +92,13 @@ func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, 
 		}
 		allVotes[identity.CrsID][voteResults.CategoryID] = votes[1:]
 
-		p1EloDelta, p2EloDelta, err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
+		eloDelta, err := updateRankings(rankings, voteResults.WonID, voteResults.LostID, voteResults.CategoryID, 60)
 
 		if err != nil {
 			fmt.Fprintf(w, `{"success":false, "msg":"%s"}`, err.Error())
 			return
 		}
-		fmt.Fprintf(w, `{"success":true, "msg":"", "elo_change":{"winner":%d, "looser":%d}}`, p1EloDelta, p2EloDelta)
+		fmt.Fprintf(w, `{"success":true, "msg":"", "elo_change":{"winner":%d, "looser":%d}}`, eloDelta, -eloDelta)
 	}
 }
 
@@ -194,7 +194,7 @@ func main() {
 
 	matchesRemaining := updateAvailableVotes(make(allAvailableVotes), people, categories)
 
-	saveJSON := time.NewTicker(time.Second)
+	saveJSON := time.NewTicker(time.Hour)
 	go saveMatchResults(saveJSON, rankings)
 
 	auth := raven.NewAuthenticator("http", "localhost", "./keys/pubkey2")
