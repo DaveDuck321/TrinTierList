@@ -1,11 +1,12 @@
 //Returns: {category:{id:int, name:string}, person1:{id:number, name:string, imgs:string[]}, ...}
 
-import { PostJSON } from "/common.js";
+import { PostJSON, PopulateCategories } from "/common.js";
 
 const kFirst = Symbol("first");
 const kSecond = Symbol("second");
 
-let CurrentRank = {
+let RequestedCategory = 0;
+let CurrentMatch = {
     id: [],
     category: 0
 }
@@ -42,11 +43,11 @@ function EloChangeClass(Change) {
 }
 
 async function ShowPeople(category) {
-    document.getElementById("category").innerHTML = "Loading...";
+    document.getElementById("categoryName").innerHTML = "Loading...";
 
     const data = await PostJSON("/api/match", { category });
 
-    document.getElementById("category").innerHTML = data.category.name;
+    document.getElementById("categoryName").innerHTML = data.category.name;
 
     const image_1 = document.querySelector("#first  img");
     const image_2 = document.querySelector("#second img");
@@ -60,7 +61,7 @@ async function ShowPeople(category) {
     document.querySelector("#first  p span:first-of-type").innerText = data.person1.elo;
     document.querySelector("#second p span:first-of-type").innerText = data.person2.elo;
 
-    CurrentRank = {
+    CurrentMatch = {
         id: [data.person1.id, data.person2.id],
         category: data.category.id,
     };
@@ -84,18 +85,19 @@ async function AnimateEloChange(elo_change, Winner) {
     Change1.innerText = FormatEloChange(elo_change.person1);
     Change2.innerText = FormatEloChange(elo_change.person2);
 
-    await Sleep(750);
-
+    await Sleep(300);
+    
     Change1.innerText = "";
     Change2.innerText = "";
-
+    
+    /*
     const Elo1 = document.querySelector("#first  p span:first-of-type");
     const Elo2 = document.querySelector("#second p span:first-of-type");
 
     Elo1.innerText = parseInt(Elo1.innerText) + elo_change.person1;
     Elo2.innerText = parseInt(Elo2.innerText) + elo_change.person2;
 
-    await Sleep(750);
+    await Sleep(100);*/
 }
 
 async function Vote(Winner, category) {
@@ -108,11 +110,11 @@ async function Vote(Winner, category) {
     };
 
     if (Winner === kFirst) {
-        Data.won = CurrentRank.id[0];
-        Data.lost = CurrentRank.id[1];
+        Data.won = CurrentMatch.id[0];
+        Data.lost = CurrentMatch.id[1];
     } else {
-        Data.won = CurrentRank.id[1];
-        Data.lost = CurrentRank.id[0];
+        Data.won = CurrentMatch.id[1];
+        Data.lost = CurrentMatch.id[0];
     }
 
     const Response = await PostJSON("/api/vote", Data);
@@ -120,15 +122,20 @@ async function Vote(Winner, category) {
     if (Response.success)
         await AnimateEloChange(Response.elo_change, Winner);
 
-    ShowPeople("random");
+    await ShowPeople(RequestedCategory);
 
     for (const Button of document.querySelectorAll("button.btn-lg"))
         Button.disabled = false;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    ShowPeople("random");
+document.addEventListener("DOMContentLoaded", async () => {
+    document.querySelector("#first  button").onclick = () => { Vote(kFirst, CurrentMatch.category) };
+    document.querySelector("#second button").onclick = () => { Vote(kSecond, CurrentMatch.category) };
 
-    document.querySelector("#first  button").onclick = () => { Vote(kFirst, CurrentRank.category) };
-    document.querySelector("#second button").onclick = () => { Vote(kSecond, CurrentRank.category) };
+    const { people, categories } = await PostJSON("/api/leaderboard", {});
+    PopulateCategories(categories, (e)=> {
+        RequestedCategory = Number.parseInt(e.srcElement.value);
+        ShowPeople(RequestedCategory);
+    });
+    ShowPeople(RequestedCategory);
 });

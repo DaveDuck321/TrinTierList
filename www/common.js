@@ -13,3 +13,16 @@ export async function PostJSON(url, Data) {
 
     return Response;
 }
+
+export function PopulateCategories(categories, onchange) {
+    const select = document.getElementById("category");
+    for (const category of categories) {
+        const option = document.createElement("option");
+        option.value = category.id;
+        option.innerText = category.name;
+
+        select.appendChild(option);
+    }
+    
+    select.addEventListener("change", onchange);
+}

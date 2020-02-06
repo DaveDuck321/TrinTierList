@@ -1,6 +1,6 @@
 // {people:[{id:number, name:string, imgs:string[]}], rankings: }
 
-import { PostJSON } from "/common.js";
+import { PostJSON, PopulateCategories } from "/common.js";
 
 function sortByCategory(people, elos, category) {
     for (const person of people)
@@ -30,24 +30,10 @@ async function PopulateLeaderboard(people, elos, category) {
     }
 }
 
-function PopulateCategories(categories) {
-    const select = document.getElementById("category");
-
-    for (const category of categories) {
-        const option = document.createElement("option");
-        option.value = category.id;
-        option.innerText = category.name;
-
-        select.appendChild(option);
-    }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
     const { people, categories, elos } = await PostJSON("/api/leaderboard", {});
 
-    PopulateCategories(categories);
     PopulateLeaderboard(people, elos, categories[0].id);
-
-    document.getElementById("category").addEventListener("change",
+    PopulateCategories(categories, 
         e => PopulateLeaderboard(people, elos, e.srcElement.value));
 });
