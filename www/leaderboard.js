@@ -1,35 +1,19 @@
 // {people:[{id:number, name:string, imgs:string[]}], rankings: }
 
-
-async function PostJSON(url, data) {
-    const result = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json;'
-        },
-        body: JSON.stringify(data),
-    });
-    const response = await result.json();
-    if (!response.success) {
-        console.error(response.msg);
-    }
-    return response;
-}
+import { PostJSON } from "/common.js";
 
 function sortByCategory(people, elos, category) {
-    for(let person of people) {
+    for (const person of people)
         person.elo = elos[category][person.id];
-    }
 
-    people.sort((p1, p2) => p2.elo - p1.elo );
+    people.sort((p1, p2) => p2.elo - p1.elo);
 }
 
 async function PopulateLeaderboard(people, elos, category) {
-    //Delete existing entries
-    document.querySelectorAll("#leaderboard tr").forEach((e)=>{e.remove()})
+    // Delete existing entries
+    document.querySelectorAll("#leaderboard tr").forEach(e => e.remove());
 
     sortByCategory(people, elos, category);
-    //document.getElementById("category").innerText = categories[category].name;
 
     const leaderboard = document.getElementById("leaderboard");
     const template = leaderboard.querySelector("template");
@@ -47,10 +31,10 @@ async function PopulateLeaderboard(people, elos, category) {
 }
 
 function PopulateCategories(categories) {
-    let select = document.getElementById("category");
+    const select = document.getElementById("category");
 
-    for(let category of categories) {
-        let option = document.createElement("option");
+    for (const category of categories) {
+        const option = document.createElement("option");
         option.value = category.id;
         option.innerText = category.name;
 
@@ -58,12 +42,12 @@ function PopulateCategories(categories) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", async ()=> {
-    let { people, categories, elos } = await PostJSON("/api/leaderboard", {});
-    PopulateCategories(categories);
+document.addEventListener("DOMContentLoaded", async () => {
+    const { people, categories, elos } = await PostJSON("/api/leaderboard", {});
 
-    document.getElementById("category").onchange = (e)=> {
-        PopulateLeaderboard(people, elos, e.srcElement.value);
-    };
+    PopulateCategories(categories);
     PopulateLeaderboard(people, elos, categories[0].id);
+
+    document.getElementById("category").addEventListener("change",
+        e => PopulateLeaderboard(people, elos, e.srcElement.value));
 });

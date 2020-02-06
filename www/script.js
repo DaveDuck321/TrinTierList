@@ -1,5 +1,7 @@
 //Returns: {category:{id:int, name:string}, person1:{id:number, name:string, imgs:string[]}, ...}
 
+import { PostJSON } from "/common.js";
+
 const kFirst = Symbol("first");
 const kSecond = Symbol("second");
 
@@ -37,23 +39,6 @@ function EloChangeClass(Change) {
         return "text-muted";
     else // (Change > 0)
         return "text-success";
-}
-
-async function PostJSON(url, data) {
-    const Request = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data),
-    });
-
-    const Response = await Request.json();
-    if (!Response.success) {
-        console.error(Response.msg);
-    }
-
-    return Response;
 }
 
 async function ShowPeople(category) {
