@@ -89,8 +89,8 @@ async function AnimateEloChange(elo_change, Winner) {
     Change1.innerText = "";
     Change2.innerText = "";
 
-    Elo1 = document.querySelector("#first  p span:first-of-type");
-    Elo2 = document.querySelector("#second p span:first-of-type");
+    const Elo1 = document.querySelector("#first  p span:first-of-type");
+    const Elo2 = document.querySelector("#second p span:first-of-type");
 
     Elo1.innerText = parseInt(Elo1.innerText) + elo_change.person1;
     Elo2.innerText = parseInt(Elo2.innerText) + elo_change.person2;
@@ -99,7 +99,7 @@ async function AnimateEloChange(elo_change, Winner) {
 }
 
 async function Vote(Winner, category) {
-    for (Button of document.querySelectorAll("button.btn-lg"))
+    for (const Button of document.querySelectorAll("button.btn-lg"))
         Button.disabled = true;
 
     const Data = {
@@ -122,7 +122,7 @@ async function Vote(Winner, category) {
 
     ShowPeople("random");
 
-    for (Button of document.querySelectorAll("button.btn-lg"))
+    for (const Button of document.querySelectorAll("button.btn-lg"))
         Button.disabled = false;
 }
 
