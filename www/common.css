@@ -1,0 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat|Source+Code+Pro:500&display=swap');
+
+.navbar {
+    font-family: 'Montserrat', sans-serif;
+}
+
+.container {
+    font-family: 'Source Code Pro', monospace;
+}
