@@ -54,6 +54,7 @@ function LoadImage(src) {
 }
 
 function ReplaceElement(el, newEl) {
+    newEl.classList = el.classList;
     el.parentNode.replaceChild(newEl, el);
 }
 
@@ -79,7 +80,7 @@ async function ShowPeople(category, canUpdate = ()=>{}) {
             LoadImage(Sample(data.person2.imgs)),
             canUpdate
         ]);
-        
+
     eloClear();
     
     document.getElementById("categoryName").innerHTML = data.category.name;
