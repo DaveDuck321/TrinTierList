@@ -43,7 +43,21 @@ function EloChangeClass(Change) {
     return "text-success";
 }
 
-async function ShowPeople(category) {
+function LoadImage(src) {
+    return new Promise((resolve, reject) => {
+        let image = document.createElement("img");
+        image.onload = ()=>{
+            resolve(image);
+        };
+        image.src = src;
+    });
+}
+
+function ReplaceElement(el, newEl) {
+    el.parentNode.replaceChild(newEl, el);
+}
+
+async function ShowPeople(category, canUpdate) {
     document.getElementById("categoryName").innerHTML = "Loading...";
 
     const data = await PostJSON("/api/match", { category });
@@ -56,14 +70,20 @@ async function ShowPeople(category) {
         }
         return;
     }
+    const old_image_1 = document.querySelector("#first  img");
+    const old_image_2 = document.querySelector("#second img");
+
+    const [new_image_1, new_image_2, _] = await Promise.all(
+        [
+            LoadImage(Sample(data.person1.imgs)),
+            LoadImage(Sample(data.person2.imgs)),
+            canUpdate
+        ]);
 
     document.getElementById("categoryName").innerHTML = data.category.name;
 
-    const image_1 = document.querySelector("#first  img");
-    const image_2 = document.querySelector("#second img");
-
-    image_1.src = Sample(data.person1.imgs);
-    image_2.src = Sample(data.person2.imgs);
+    ReplaceElement(old_image_1, new_image_1);
+    ReplaceElement(old_image_2, new_image_2);
 
     document.querySelector("#first  h3").innerText = data.person1.nickname;
     document.querySelector("#second h3").innerText = data.person2.nickname;
@@ -129,13 +149,10 @@ async function Vote(Winner, category) {
 
     const Response = await PostJSON("/api/vote", Data);
 
-    if (Response.success)
-        await AnimateEloChange(Response.elo_change, Winner);
+    let animationFinished = AnimateEloChange(Response.elo_change, Winner);
 
-    await ShowPeople(RequestedCategory);
-
-    for (const Button of document.querySelectorAll("button.btn-lg"))
-        Button.disabled = false;
+    await ShowPeople(RequestedCategory, animationFinished);
+    document.querySelectorAll("button.btn-lg").forEach((B)=> B.disabled = false);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
