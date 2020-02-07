@@ -5,8 +5,8 @@ import { PostJSON, PopulateCategories } from "/common.js";
 const kFirst = Symbol("first");
 const kSecond = Symbol("second");
 
-const ErrorMessages = {"no available matches":
-`No matches could be found for your user in this category!
+const ErrorMessages = {
+    "no available matches": `No matches could be found for your user in this category!
 Are you permitted to vote?
 If you believe this is an error, please contact the administrator.`
 };
@@ -44,11 +44,9 @@ function EloChangeClass(Change) {
 }
 
 function LoadImage(src) {
-    return new Promise((resolve, reject) => {
-        let image = document.createElement("img");
-        image.onload = ()=>{
-            resolve(image);
-        };
+    return new Promise(resolve => {
+        const image = document.createElement("img");
+        image.addEventListener("load", () => resolve(image), { once: true });
         image.src = src;
     });
 }
@@ -58,31 +56,31 @@ function ReplaceElement(el, newEl) {
     el.parentNode.replaceChild(newEl, el);
 }
 
-async function ShowPeople(category, canUpdate = ()=>{}) {
+async function ShowPeople(category, AnimationPromise = () => { }) {
     document.getElementById("categoryName").innerHTML = "Loading...";
 
     const data = await PostJSON("/api/match", { category });
 
     //Crash out w/ message if non-engineer tries to vote
-    if(!data.success) {
+    if (!data.success) {
         document.getElementById("categoryName").innerHTML = "Error!";
-        if(ErrorMessages[data.msg]) {
+        if (ErrorMessages[data.msg]) {
             alert(ErrorMessages[data.msg]);
         }
         return;
     }
+
     const old_image_1 = document.querySelector("#first  img");
     const old_image_2 = document.querySelector("#second img");
 
-    const [new_image_1, new_image_2, eloClear] = await Promise.all(
-        [
-            LoadImage(Sample(data.person1.imgs)),
-            LoadImage(Sample(data.person2.imgs)),
-            canUpdate
-        ]);
+    const [new_image_1, new_image_2, FinishAnimation] = await Promise.all([
+        LoadImage(Sample(data.person1.imgs)),
+        LoadImage(Sample(data.person2.imgs)),
+        AnimationPromise
+    ]);
 
-    eloClear();
-    
+    FinishAnimation();
+
     document.getElementById("categoryName").innerHTML = data.category.name;
 
     ReplaceElement(old_image_1, new_image_1);
@@ -120,8 +118,8 @@ async function AnimateEloChange(elo_change, Winner) {
 
     await Sleep(300);
 
-    return ()=>{
-        // Very javascript
+    return () => {
+        // Very javascript, much lambda
         Change1.innerText = "";
         Change2.innerText = "";
     }
@@ -155,10 +153,12 @@ async function Vote(Winner, category) {
 
     const Response = await PostJSON("/api/vote", Data);
 
-    let animationFinished = AnimateEloChange(Response.elo_change, Winner);
+    const animationFinished = AnimateEloChange(Response.elo_change, Winner);
 
     await ShowPeople(RequestedCategory, animationFinished);
-    document.querySelectorAll("button.btn-lg").forEach((B)=> B.disabled = false);
+
+    for (const Button of document.querySelectorAll("button.btn-lg"))
+        Button.disabled = false;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
