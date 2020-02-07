@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	raven "github.com/DaveDuck321/RavenAuthenticationGo"
@@ -70,8 +72,12 @@ func staticServe(identity raven.Identity, w http.ResponseWriter, r *http.Request
 	http.ServeFile(w, r, "www"+r.URL.EscapedPath())
 }
 
-func serveForbidden(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "www/error/forbidden.html")
+func mkServeForbidden(auth raven.Authenticator) func(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.New("").ParseFiles("www/error/forbidden.html")
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		t.ExecuteTemplate(w, "Forbidden", auth.GetRavenLink("/auth/raven"))
+	}
 }
 
 func mkVote(rankings rankings, allVotes allAvailableVotes) func(raven.Identity, http.ResponseWriter, *http.Request) {
@@ -187,6 +193,8 @@ func updateAvailableVotes(votes allAvailableVotes, people []person, categories [
 }
 
 func main() {
+	hostname, port := splitHostPort(os.Args[1])
+
 	people := getPeople()
 	peopleMap := makePeopleMap(people)
 	categories := getCategories()
@@ -197,18 +205,18 @@ func main() {
 	saveJSON := time.NewTicker(time.Hour)
 	go saveMatchResults(saveJSON, rankings)
 
-	auth := raven.NewAuthenticator("http", "localhost", "./keys/pubkey2")
+	auth := raven.NewAuthenticator("http", hostname, "./keys/pubkey2")
 
 	auth.HandleAuthenticationPath("/auth/raven", mkRedirect("/"), permissionDenied)
 	auth.AuthoriseAndHandle("/api/match", mkEngineers(rankings, matchesRemaining, peopleMap, categories), permissionDenied)
 	auth.AuthoriseAndHandle("/api/leaderboard", mkLeaderboard(people, categories, rankings), permissionDenied)
 	auth.AuthoriseAndHandle("/api/vote", mkVote(rankings, matchesRemaining), permissionDenied)
 
-	http.HandleFunc("/forbidden", serveForbidden)
+	http.HandleFunc("/forbidden", mkServeForbidden(auth))
 	auth.AuthoriseAndHandle("/", staticServe, permissionDenied)
 
-	fmt.Println("Listening at port 80...")
-	fmt.Println(http.ListenAndServe(":80", nil))
+	fmt.Println("Listening at port", port)
+	fmt.Println(http.ListenAndServe(port, nil))
 }
 
 /*

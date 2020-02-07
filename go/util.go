@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"strings"
 )
 
 //BigConst is just a big number
@@ -99,4 +100,9 @@ func genPermutations(people []person) []int {
 		}
 	}
 	return permutations
+}
+
+func splitHostPort(hostname string) (string, string) {
+	portIndex := strings.LastIndex(hostname, ":")
+	return hostname[:portIndex], hostname[portIndex:]
 }
