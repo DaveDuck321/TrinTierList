@@ -66,27 +66,37 @@
 
         <h1 class="my-4 text-center">Rankings</h1>
 
-        <div class="row my-3">
+        <div class="row my-2">
 
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th scope="col">Rank</th>
-                        <th scope="col">Nickname</th>
-                        <th scope="col">ELO</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboard">
-                    <template>
+            <div class="col-sm">
+                <table class="table table-sm">
+                    <thead>
                         <tr>
-                            <th scope="row" class="rank"></th>
-                            <td class="nickname"></td>
-                            <td class="elo"></td>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Nickname</th>
+                            <th scope="col">ELO</th>
                         </tr>
-                    </template>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody id="leaderboard">
+                        <template>
+                            <tr>
+                                <th scope="row" class="rank"></th>
+                                <td class="nickname"></td>
+                                <td class="elo"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
 
+            <div class="col-sm">
+                <figure class="figure w-75 mx-auto d-block mt-2">
+                    <img class="figure-img rounded-lg w-100">
+                    <figcaption class="text-center lead"></figcaption>
+                </figure>
+
+
+            </div>
 
         </div>
 

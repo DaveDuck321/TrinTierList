@@ -9,11 +9,18 @@ function sortByCategory(people, elos, category) {
     people.sort((p1, p2) => p2.elo - p1.elo);
 }
 
+function UpdateImage(Person) {
+    document.querySelector("figure img").src = Person.imgs[0];
+    document.querySelector("figure figcaption").innerText = Person.nickname;
+}
+
 async function PopulateLeaderboard(people, elos, category) {
     // Delete existing entries
     document.querySelectorAll("#leaderboard tr").forEach(e => e.remove());
 
     sortByCategory(people, elos, category);
+
+    UpdateImage(people[0]);
 
     const leaderboard = document.getElementById("leaderboard");
     const template = leaderboard.querySelector("template");
