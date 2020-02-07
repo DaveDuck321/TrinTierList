@@ -57,7 +57,7 @@ function ReplaceElement(el, newEl) {
     el.parentNode.replaceChild(newEl, el);
 }
 
-async function ShowPeople(category, canUpdate) {
+async function ShowPeople(category, canUpdate = ()=>{}) {
     document.getElementById("categoryName").innerHTML = "Loading...";
 
     const data = await PostJSON("/api/match", { category });
@@ -73,13 +73,15 @@ async function ShowPeople(category, canUpdate) {
     const old_image_1 = document.querySelector("#first  img");
     const old_image_2 = document.querySelector("#second img");
 
-    const [new_image_1, new_image_2, _] = await Promise.all(
+    const [new_image_1, new_image_2, eloClear] = await Promise.all(
         [
             LoadImage(Sample(data.person1.imgs)),
             LoadImage(Sample(data.person2.imgs)),
             canUpdate
         ]);
-
+        
+    eloClear();
+    
     document.getElementById("categoryName").innerHTML = data.category.name;
 
     ReplaceElement(old_image_1, new_image_1);
@@ -117,8 +119,11 @@ async function AnimateEloChange(elo_change, Winner) {
 
     await Sleep(300);
 
-    Change1.innerText = "";
-    Change2.innerText = "";
+    return ()=>{
+        // Very javascript
+        Change1.innerText = "";
+        Change2.innerText = "";
+    }
 
     /* Removed for now since it makes the site feel jerky -- maybe adjust timings?
     const Elo1 = document.querySelector("#first  p span:first-of-type");
