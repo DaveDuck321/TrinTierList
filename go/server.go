@@ -60,6 +60,8 @@ type leaderboardResponse struct {
 	Rankings   rankings   `json:"elos"`
 }
 
+type rankings map[int](map[int]int)
+
 //Maps user identity and category to remaining votes
 type availableVotes map[int]([]int)
 type allAvailableVotes map[string]availableVotes
@@ -165,33 +167,6 @@ func mkRedirect(url string) func(identity raven.Identity, w http.ResponseWriter,
 	}
 }
 
-func saveMatchResults(saveJSON *time.Ticker, matchResults rankings) {
-	for {
-		<-saveJSON.C
-		data, _ := json.Marshal(matchResults)
-		ioutil.WriteFile("data/matchResult.json", data, 0644)
-	}
-}
-
-func updateAvailableVotes(votes allAvailableVotes, people []person, categories []category) allAvailableVotes {
-	allMatches := genPermutations(people)
-	rand.Seed(time.Now().UnixNano())
-	for _, person := range people {
-		votes[person.CrsID] = make(availableVotes)
-		for _, category := range categories {
-			pVotes := make([]int, len(allMatches))
-			copy(pVotes, allMatches)
-
-			//Display in random order
-			rand.Shuffle(len(allMatches), func(i, j int) {
-				pVotes[i], pVotes[j] = pVotes[j], pVotes[i]
-			})
-			votes[person.CrsID][category.ID] = pVotes
-		}
-	}
-	return votes
-}
-
 func main() {
 	hostname, port := splitHostPort(os.Args[1])
 
@@ -202,8 +177,8 @@ func main() {
 
 	matchesRemaining := updateAvailableVotes(make(allAvailableVotes), people, categories)
 
-	saveJSON := time.NewTicker(time.Hour)
-	go saveMatchResults(saveJSON, rankings)
+	go saveELOsInterval(rankings, time.NewTicker(time.Hour))
+	go refreshTempDataInterval(matchesRemaining, people, categories, time.NewTicker(time.Hour*12))
 
 	auth := raven.NewAuthenticator("http", hostname, "./keys/pubkey2")
 

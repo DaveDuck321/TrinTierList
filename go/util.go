@@ -6,12 +6,21 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"strings"
+	"time"
 )
 
 //BigConst is just a big number
 const BigConst = (1 << 8)
 
-type rankings map[int](map[int]int)
+type rankingsBackup struct {
+	Date      time.Time        `json:"time"`
+	Rankings  rankings         `json:"rankings"`
+	VoteCount map[string](int) `json:"voteCount"`
+}
+
+func numberOfPermutations(peopleCount int) int {
+	return (peopleCount * (peopleCount - 1)) / 2
+}
 
 func getPeople() []person {
 	var people []person
@@ -105,4 +114,72 @@ func genPermutations(people []person) []int {
 func splitHostPort(hostname string) (string, string) {
 	portIndex := strings.LastIndex(hostname, ":")
 	return hostname[:portIndex], hostname[portIndex:]
+}
+
+func saveELOs(elos rankings) {
+	data, _ := json.Marshal(elos)
+	ioutil.WriteFile("data/matchResult.json", data, 0644)
+}
+
+func backupMatchResults(votes allAvailableVotes) {
+	t := time.Now()
+	fileName := fmt.Sprintf("data/backup/%d-%02d-%02d_%02d.json",
+		t.Year(), t.Month(), t.Day(), t.Hour())
+
+	savedElosData, _ := ioutil.ReadFile("data/matchResult.json")
+
+	var elos rankings
+	json.Unmarshal(savedElosData, &elos)
+
+	numberOfVotes := numberOfPermutations(len(votes))
+
+	playerVoteCount := make(map[string](int))
+	for personID, votesByCategory := range votes {
+		totalVotes := 0
+		for _, votes := range votesByCategory {
+			totalVotes += numberOfVotes - len(votes)
+		}
+
+		playerVoteCount[personID] = totalVotes
+	}
+	backupData, _ := json.Marshal(
+		rankingsBackup{
+			t, elos, playerVoteCount,
+		})
+	ioutil.WriteFile(fileName, backupData, 0644)
+}
+
+func refreshTempDataInterval(votes allAvailableVotes, people []person, categories []category, timePeriod *time.Ticker) {
+	for {
+		<-timePeriod.C
+		backupMatchResults(votes)
+		updateAvailableVotes(votes, people, categories)
+	}
+}
+
+func saveELOsInterval(matchResults rankings, timePeriod *time.Ticker) {
+	for {
+		<-timePeriod.C
+		saveELOs(matchResults)
+	}
+}
+
+func updateAvailableVotes(votes allAvailableVotes, people []person, categories []category) allAvailableVotes {
+	allMatches := genPermutations(people)
+	rand.Seed(time.Now().UnixNano())
+	for _, person := range people {
+		votes[person.CrsID] = make(availableVotes)
+		for _, category := range categories {
+			pVotes := make([]int, len(allMatches))
+			copy(pVotes, allMatches)
+
+			//Display in random order
+			rand.Shuffle(len(allMatches), func(i, j int) {
+				pVotes[i], pVotes[j] = pVotes[j], pVotes[i]
+			})
+			votes[person.CrsID][category.ID] = pVotes
+		}
+	}
+	fmt.Println("Votes have been refreshed")
+	return votes
 }
