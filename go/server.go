@@ -177,8 +177,8 @@ func main() {
 
 	matchesRemaining := updateAvailableVotes(make(allAvailableVotes), people, categories)
 
-	go saveELOsInterval(rankings, time.NewTicker(time.Hour))
-	go refreshTempDataInterval(matchesRemaining, people, categories, time.NewTicker(time.Hour*12))
+	go saveELOsInterval(rankings, time.NewTicker(12*time.Hour))
+	go refreshTempDataInterval(matchesRemaining, people, categories, time.NewTicker(48*time.Hour))
 
 	auth := raven.NewAuthenticator("http", hostname, "./keys/pubkey2")
 
