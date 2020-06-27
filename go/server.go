@@ -66,7 +66,8 @@ type rankings map[int](map[int]int)
 type availableVotes map[int]([]int)
 type allAvailableVotes map[string]availableVotes
 
-func permissionDenied(w http.ResponseWriter, r *http.Request) {
+func permissionDenied(w http.ResponseWriter, r *http.Request, err error) {
+	fmt.Println("User failed to login: ", err)
 	http.Redirect(w, r, "/forbidden", 302)
 }
 
@@ -193,12 +194,3 @@ func main() {
 	fmt.Println("Listening at port", port)
 	fmt.Println(http.ListenAndServe(port, nil))
 }
-
-/*
-https://raven.cam.ac.uk/auth/authenticate.html
-?
-ver=3&
-url=http%3a%2f%2flocalhost%2fauth%2fraven&
-date=20200124T165401Z&
-iact=yes&
-*/
